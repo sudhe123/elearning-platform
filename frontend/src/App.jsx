@@ -10,6 +10,8 @@ import Register from "./components/Register.jsx"
 import Dashboard from "./components/Dashboard.jsx"
 import About from "./components/About.jsx"
 import Certificate from "./components/Certificate";
+import Enrollment from "./components/Enrollment.jsx";
+import Roadmap from "./components/Roadmap.jsx";
 
 function App() {
 
@@ -61,6 +63,14 @@ function App() {
         <Route
   path="/certificate"
   element={<Certificate />}
+  />
+        <Route
+  path="/enroll/:id"
+  element={<Enrollment />}
+  />
+        <Route
+  path="/roadmap/:id"
+  element={<Roadmap />}
   />
   
 

@@ -29,7 +29,6 @@ const courses = [
     video: "LHBE6Q9XlzI",
     title: "Python for Data Science",
     rating: 4.5,
-    price: "$499",
 
   description:
     "Learn Python programming for data science and analytics.",
@@ -372,7 +371,6 @@ const courses = [
     video: "9g5m9qQLeY8",
     title: "Operating Systems",
     rating: 4.5,
-    price: "$499",
     description:
      "Learn the fundamentals of operating systems and their design principles",
      contents:[
@@ -390,7 +388,6 @@ const courses = [
     video: "9g5m9qQLeY8",
     title: "Computer Networks",
     rating: 4.5,
-    price: "$499",
     description:
      "Learn the fundamentals of computer networks and their protocols",
      contents:[

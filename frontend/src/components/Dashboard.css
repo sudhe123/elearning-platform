@@ -13,12 +13,58 @@ body {
 .dashboard-container h2 {
   font-size: 36px;
   color: #12152d;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .dashboard-container h3 {
   color: #444;
   margin-bottom: 20px;
+}
+
+/* Continue Learning Styles */
+.continue-learning {
+  margin-bottom: 40px;
+  background: white;
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.continue-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9ff;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 5px solid #6c63ff;
+}
+
+.continue-card-content h4 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #12152d;
+}
+
+.continue-card-content p {
+  margin: 5px 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.resume-btn {
+  padding: 10px 20px;
+  background: #6c63ff;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.resume-btn:hover {
+  background: #5a52d5;
+  transform: scale(1.05);
 }
 
 .course-grid {
@@ -42,10 +88,27 @@ body {
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
 }
 
+.course-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
 .course-box h3 {
   font-size: 22px;
   color: #12152d;
-  margin-bottom: 10px;
+  margin: 0;
+}
+
+.goal-badge {
+  background: #e0f0ff;
+  color: #007bff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .course-id {
@@ -76,6 +139,25 @@ body {
   background: #39b51f;
   border-radius: 20px;
   transition: width 0.5s ease;
+}
+
+.view-course-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 20px;
+  padding: 12px;
+  background: #f0f0f0;
+  color: #12152d;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.view-course-btn:hover {
+  background: #6c63ff;
+  color: white;
 }
 
 .no-course {

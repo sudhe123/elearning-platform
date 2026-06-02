@@ -1,18 +1,23 @@
 import "./Dashboard.css";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 function Dashboard() {
 
   const [courses, setCourses] = useState([]);
+  const [lastWatched, setLastWatched] = useState(null);
 
-useEffect(() => {
+  useEffect(() => {
 
   const enrolledCourses =
     JSON.parse(localStorage.getItem("enrolledCourses")) || [];
 
-  console.log("Dashboard Data:", enrolledCourses);
-
   setCourses(enrolledCourses);
+
+  const last = JSON.parse(localStorage.getItem("lastWatched"));
+  if (last) {
+    setLastWatched(last);
+  }
 
 }, []);
 
@@ -20,6 +25,21 @@ useEffect(() => {
  <div className="dashboard-container">
 
   <h2>Welcome to Dashboard</h2>
+
+  {lastWatched && (
+    <div className="continue-learning">
+      <h3>Continue Learning</h3>
+      <div className="continue-card">
+        <div className="continue-card-content">
+          <h4>{lastWatched.courseTitle}</h4>
+          <p>Resume where you left off</p>
+        </div>
+        <Link to={`/course/${lastWatched.courseId}`} className="resume-btn">
+          Resume Lesson
+        </Link>
+      </div>
+    </div>
+  )}
 
   <h3>My Enrolled Courses</h3>
 
@@ -30,7 +50,12 @@ useEffect(() => {
     courses.map((course, index) => (
       <div className="course-box" key={index}>
 
-  <h3>{course.title}</h3>
+  <div className="course-card-header">
+    <h3>{course.title}</h3>
+    {course.learningGoal && (
+      <span className="goal-badge">{course.learningGoal}</span>
+    )}
+  </div>
 
   <p className="course-id">
     Course ID: {course.id}
@@ -52,6 +77,10 @@ useEffect(() => {
     ></div>
 
   </div>
+
+  <Link to={`/course/${course.id}`} className="view-course-btn">
+    {course.progress === 100 ? "Review Course" : "Continue"}
+  </Link>
 
 </div>
     ))
