@@ -15,6 +15,7 @@ function Enrollment() {
     "Internship",
     "College Exam",
     "Skill Improvement",
+    "1 Hour Quick Learning",
   ];
 
   useEffect(() => {
