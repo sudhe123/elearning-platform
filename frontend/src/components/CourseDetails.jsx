@@ -1,10 +1,7 @@
 import "./CourseDetails.css";
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import React from "react";
 import courses from "../Data/CourseData";
-import roadmapData from "../Data/roadmapData";
-import YouTube from "react-youtube";
-
 
 function CourseDetails() {
   const navigate = useNavigate();
@@ -12,17 +9,7 @@ function CourseDetails() {
 
   const course = courses.find((item) => item.id == Number(id));
 
-  const [isEnrolled, setIsEnrolled] = useState(false);
-
-  useEffect(() => {
-    const enrolledCourses = JSON.parse(localStorage.getItem("enrolledCourses")) || [];
-    const savedCourse = enrolledCourses.find(c => c.id == id);
-    if (savedCourse && savedCourse.learningGoal) {
-      setIsEnrolled(true);
-    }
-  }, [id]);
-
-  if (!course) return <div>Course not found</div>;
+  if (!course) return <div className="course-details-error">Course not found</div>;
 
   const handleEnroll = () => {
     const loggedIn = localStorage.getItem("isLoggedIn");
@@ -33,52 +20,73 @@ function CourseDetails() {
     navigate(`/enroll/${id}`);
   };
 
-  const handleViewRoadmap = () => {
-    navigate(`/roadmap/${id}`);
-  };
-
   return (
     <div className="course-details">
       <div className="course-left">
-        <div className="enroll-placeholder" style={{ background: '#f4f4f9', height: '450px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
-          {isEnrolled ? (
-            <button 
-              className="view-course-btn" 
-              onClick={handleViewRoadmap} 
-              style={{ padding: '15px 30px', fontSize: '18px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-            >
-              View My Roadmap
-            </button>
-          ) : (
-            <button 
-              className="enroll-btn" 
-              onClick={handleEnroll} 
-              style={{ padding: '15px 30px', fontSize: '18px', background: '#6c63ff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-            >
-              Enroll Now to Start
-            </button>
-          )}
-          <p style={{marginTop: '15px', color: '#666', fontWeight: 500}}>
-            {isEnrolled ? "You are enrolled! Click to continue your journey." : "Unlock your personalized roadmap and start learning today!"}
-          </p>
-        </div>
-      </div>
-
-      <div className="course-right">
         <h1>{course.title}</h1>
-        <div style={{ display: 'flex', gap: '10px', margin: '15px 0' }}>
-            <span style={{ background: '#ffe8a3', padding: '4px 10px', borderRadius: '5px', fontSize: '14px', fontWeight: 600 }}>★ {course.rating}</span>
+        <div className="course-rating-badge" style={{ display: 'flex', gap: '10px', margin: '15px 0' }}>
+          <span style={{ background: '#ffe8a3', padding: '4px 10px', borderRadius: '5px', fontSize: '14px', fontWeight: 600, color: '#000' }}>
+            ★ {course.rating}
+          </span>
         </div>
-        <p>{course.description}</p>
+        <p className="course-description-text" style={{ fontSize: '16px', lineHeight: '1.6', color: '#4b5563', marginBottom: '25px' }}>
+          {course.description}
+        </p>
 
-        <div className="curriculum-preview">
-          <h3>What you'll learn</h3>
-          <ul style={{ paddingLeft: '20px', color: '#4b5563' }}>
+        <div className="curriculum-preview" style={{ background: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f0f0f0' }}>
+          <h3 style={{ fontSize: '18px', marginBottom: '15px', color: '#111827' }}>What you'll learn</h3>
+          <ul style={{ paddingLeft: '20px', color: '#4b5563', lineHeight: '1.8' }}>
             {course.contents.map((item, index) => (
               <li key={index} style={{ marginBottom: '8px' }}>{item}</li>
             ))}
           </ul>
         </div>
+      </div>
+
+      <div className="course-right" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', height: 'fit-content' }}>
+        <img 
+          src={course.image} 
+          alt={course.title} 
+          style={{ width: '100%', borderRadius: '8px', marginBottom: '20px', objectFit: 'cover', height: '180px' }} 
+        />
+        
+        <div className="course-quick-stats" style={{ margin: '15px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '15px' }}>
+          <p style={{ margin: '5px 0', color: '#6b7280', fontSize: '14px' }}>
+            <strong>Estimated Duration:</strong> 10-15 Hours
+          </p>
+          <p style={{ margin: '5px 0', color: '#6b7280', fontSize: '14px' }}>
+            <strong>Personalized Paths:</strong> Available
+          </p>
+        </div>
+
+        <h4 style={{ fontSize: '15px', color: '#111827', marginBottom: '10px' }}>Roadmap Benefits:</h4>
+        <ul style={{ paddingLeft: '18px', color: '#4b5563', fontSize: '13px', lineHeight: '1.6', marginBottom: '25px' }}>
+          <li>Custom steps aligned to your career goals</li>
+          <li>Targeted skills and learning outcomes</li>
+          <li>Structured progress tracking</li>
+          <li>Verified certificate on completion</li>
+        </ul>
+
+        <button 
+          className="enroll-btn" 
+          onClick={handleEnroll} 
+          style={{ 
+            width: '100%', 
+            padding: '14px 24px', 
+            fontSize: '16px', 
+            background: '#6c63ff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '8px', 
+            cursor: 'pointer', 
+            fontWeight: '600',
+            transition: 'background-color 0.2s' 
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#5b52e5'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#6c63ff'}
+        >
+          Enroll Now to Start
+        </button>
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ function Dashboard() {
           <h4>{lastWatched.courseTitle}</h4>
           <p>Resume where you left off</p>
         </div>
-        <Link to={`/course/${lastWatched.courseId}`} className="resume-btn">
+        <Link to={`/roadmap/${lastWatched.courseId}`} className="resume-btn">
           Resume Lesson
         </Link>
       </div>
@@ -78,7 +78,7 @@ function Dashboard() {
 
   </div>
 
-  <Link to={`/course/${course.id}`} className="view-course-btn">
+  <Link to={`/roadmap/${course.id}`} className="view-course-btn">
     {course.progress === 100 ? "Review Course" : "Continue"}
   </Link>
 

@@ -422,3 +422,126 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Roadmap Overview Layout */
+.roadmap-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+.overview-steps-container {
+  background: #1e1e24;
+  border: 1px solid #2e2e38;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.overview-steps-container h3 {
+  font-size: 1.3rem;
+  color: #ffffff;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.overview-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.overview-timeline-item {
+  display: flex;
+  gap: 20px;
+}
+
+.timeline-node-sec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-number-node {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #25252d;
+  border: 2px solid #3e3e4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #a0a0b0;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.timeline-number-node.completed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: #10b981;
+}
+
+.timeline-connector-line {
+  width: 2px;
+  flex: 1;
+  background: #2e2e38;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.overview-step-card-detail {
+  flex: 1;
+  background: #25252d;
+  border: 1px solid #32323f;
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 24px;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.overview-step-card-detail:hover {
+  background: #2c2c36;
+  border-color: #4a4a5a;
+}
+
+.overview-step-card-detail.completed {
+  border-left: 4px solid #10b981;
+}
+
+.overview-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.overview-card-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #ffffff;
+}
+
+.overview-step-card-detail p {
+  color: #a0a0b0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 14px 0;
+}
+
+.start-step-action-btn {
+  background: #6c63ff;
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.start-step-action-btn:hover {
+  background: #5b52e5;
+}

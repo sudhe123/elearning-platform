@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import courses from "../Data/CourseData";
 import "./Enrollment.css";
 
+import { generatePersonalizedRoadmap } from "../utils/roadmapGenerator";
+
 function Enrollment() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -11,10 +13,10 @@ function Enrollment() {
   const [learningGoal, setLearningGoal] = useState("");
 
   const options = [
-    "Job",
-    "Internship",
-    "College Exam",
-    "Skill Improvement",
+    "Job Ready",
+    "Interview Preparation",
+    "Project Based Learning",
+    "Certification Preparation",
     "1 Hour Quick Learning",
   ];
 
@@ -43,9 +45,12 @@ function Enrollment() {
       (c) => c.id === course.id
     );
 
+    const roadmap = generatePersonalizedRoadmap(course.id, learningGoal);
+
     const newCourseData = {
       ...course,
       learningGoal,
+      roadmap,
       progress: 0,
       watchedSteps: [],
       currentStepIndex: 0,

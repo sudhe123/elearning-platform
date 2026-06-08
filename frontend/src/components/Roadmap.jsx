@@ -3,8 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import YouTube from "react-youtube";
 
 import courses from "../Data/CourseData";
-import roadmapData from "../Data/roadmapData";
+import { generatePersonalizedRoadmap } from "../utils/roadmapGenerator";
 import "./Roadmap.css";
+const getVideoId = (step, course) => {
+  return (
+    step?.videoId ||
+    step?.video ||
+    step?.videoUrl ||
+    course?.video ||
+    "dQw4w9WgXcQ"
+  );
+};
 
 // Safe import resolver wrapper for YouTube component in Vite/React 19 ESM environments
 const YouTubeComponent = typeof YouTube === "function" ? YouTube : (YouTube.default || YouTube);
@@ -15,11 +24,46 @@ function Roadmap() {
 
   const course = courses.find((item) => item.id === Number(id));
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [roadmap, setRoadmap] = useState([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(null); // null means show Roadmap Overview first
   const [watchedSteps, setWatchedSteps] = useState([]);
   const [videoStarted, setVideoStarted] = useState(false);
   const [learningGoal, setLearningGoal] = useState("");
   const [videoError, setVideoError] = useState(false);
+
+  useEffect(() => {
+    const enrolledCourses =
+      JSON.parse(localStorage.getItem("enrolledCourses")) || [];
+
+    const saved = enrolledCourses.find((c) => c.id == id);
+
+    if (saved) {
+      setLearningGoal(saved.learningGoal || "");
+      setWatchedSteps(saved.watchedSteps || []);
+      
+      // Load or generate roadmap
+      let savedRoadmap = saved.roadmap;
+      if (!savedRoadmap || savedRoadmap.length === 0) {
+        savedRoadmap = generatePersonalizedRoadmap(Number(id), saved.learningGoal || "Skill Improvement");
+        saved.roadmap = savedRoadmap;
+        
+        // Save back to local storage
+        const updatedEnrolled = enrolledCourses.map((c) => {
+          if (c.id == id) {
+            return { ...c, roadmap: savedRoadmap };
+          }
+          return c;
+        });
+        localStorage.setItem("enrolledCourses", JSON.stringify(updatedEnrolled));
+      }
+      setRoadmap(savedRoadmap);
+    }
+  }, [id]);
+
+  // When step changes, reset error state and load its configuration
+  useEffect(() => {
+    setVideoError(false);
+  }, [currentStepIndex]);
 
   if (!course) {
     return (
@@ -31,37 +75,24 @@ function Roadmap() {
     );
   }
 
-  const allSteps = Array.isArray(roadmapData?.[course.id])
-    ? roadmapData[course.id]
-    : [];
+  if (roadmap.length === 0) {
+    return (
+      <div className="roadmap-page">
+        <div className="roadmap-container">
+          <h2>Generating your personalized roadmap...</h2>
+        </div>
+      </div>
+    );
+  }
 
-  // Filter: If goal is "1 Hour Quick Learning", slice to only show the first 2 essential topics
-  const roadmap = learningGoal === "1 Hour Quick Learning"
-    ? allSteps.slice(0, 2)
-    : allSteps;
-
-  useEffect(() => {
-    const enrolledCourses =
-      JSON.parse(localStorage.getItem("enrolledCourses")) || [];
-
-    const saved = enrolledCourses.find((c) => c.id == id);
-
-    if (saved) {
-      setLearningGoal(saved.learningGoal || "");
-      setWatchedSteps(saved.watchedSteps || []);
-      setCurrentStepIndex(saved.currentStepIndex || 0);
-    }
-  }, [id]);
-
-  // When step changes, reset error state
-  useEffect(() => {
-    setVideoError(false);
-  }, [currentStepIndex]);
-
+  // Calculate progress based on how many steps of the CURRENT roadmap are completed
+  const completedCount = roadmap.filter((step) => watchedSteps.includes(step.id)).length;
   const progress =
     roadmap.length > 0
-      ? Math.round((watchedSteps.filter(stepId => roadmap.some(s => s.id === stepId)).length / roadmap.length) * 100)
+      ? Math.round((completedCount / roadmap.length) * 100)
       : 0;
+
+  const isCourseCompleted = roadmap.length > 0 && completedCount === roadmap.length;
 
   const updateProgress = (newWatched, index) => {
     const enrolledCourses =
@@ -69,14 +100,13 @@ function Roadmap() {
 
     const updated = enrolledCourses.map((c) => {
       if (c.id == id) {
+        const currentCompleted = roadmap.filter((step) => newWatched.includes(step.id)).length;
+        const newProgress = roadmap.length > 0 ? Math.round((currentCompleted / roadmap.length) * 100) : 0;
         return {
           ...c,
           watchedSteps: newWatched,
-          currentStepIndex: index,
-          progress:
-            roadmap.length > 0
-              ? Math.round((newWatched.filter(stepId => roadmap.some(s => s.id === stepId)).length / roadmap.length) * 100)
-              : 0,
+          currentStepIndex: index !== null ? index : c.currentStepIndex,
+          progress: newProgress,
         };
       }
       return c;
@@ -85,13 +115,11 @@ function Roadmap() {
     localStorage.setItem("enrolledCourses", JSON.stringify(updated));
   };
 
-  const currentStep = roadmap?.[currentStepIndex] || null;
+  const currentStep = currentStepIndex !== null ? (roadmap?.[currentStepIndex] || null) : null;
 
-  const currentVideoId =
-    currentStep?.video ||
-    currentStep?.videoUrl ||
-    course?.video ||
-    null;
+const currentVideoId = currentStep
+  ? getVideoId(currentStep, course)
+  : course?.video || "dQw4w9WgXcQ";
 
   const onPlayerStateChange = (event) => {
     // 0 is PlayerState.ENDED
@@ -113,6 +141,7 @@ function Roadmap() {
     if (!roadmap[index]) return;
 
     setCurrentStepIndex(index);
+    setVideoStarted(true); // Auto-start when step is clicked
     updateProgress(watchedSteps, index);
   };
 
@@ -128,13 +157,15 @@ function Roadmap() {
   const opts = {
     height: "100%",
     width: "100%",
-    playerVars: { autoplay: 1 },
+    playerVars: { autoplay: 1, rel: 0 },
   };
 
-  const completedCount = watchedSteps.filter(stepId => roadmap.some(s => s.id === stepId)).length;
-  const isCourseCompleted = roadmap.length > 0 && completedCount === roadmap.length;
-
   const handlePrintCertificate = () => {
+    if (!isCourseCompleted) {
+      alert("Please complete all topics to unlock your certificate!");
+      return;
+    }
+
     const email = localStorage.getItem("email") || "student@elearn.com";
     const studentName = email.split("@")[0].toUpperCase();
     const completionDate = new Date().toLocaleDateString();
@@ -224,6 +255,125 @@ function Roadmap() {
     printWindow.document.close();
   };
 
+  // RENDER ROADMAP OVERVIEW
+  if (currentStepIndex === null) {
+    return (
+      <div className="roadmap-page">
+        <div className="roadmap-container">
+          
+          {/* HEADER */}
+          <div className="roadmap-header">
+            <div className="header-top">
+              <button
+                className="back-btn"
+                onClick={() => navigate(`/course/${id}`)}
+              >
+                ← Back to Course
+              </button>
+              <span className="course-badge">Personalized Roadmap</span>
+            </div>
+
+            <h2>{course.title}</h2>
+
+            {learningGoal && (
+              <div className="goal-info">
+                Selected Goal Focus: <strong>{learningGoal}</strong>
+              </div>
+            )}
+          </div>
+
+          <div className="roadmap-main roadmap-overview-grid">
+            
+            {/* Steps Timeline Grid */}
+            <div className="roadmap-content-area">
+              <div className="overview-steps-container">
+                <h3>Your Learning Path</h3>
+                <div className="overview-timeline">
+                  {roadmap.map((step, index) => {
+                    const isCompleted = watchedSteps.includes(step.id);
+                    return (
+                      <div key={step.id} className="overview-timeline-item">
+                        <div className="timeline-node-sec">
+                          <div className={`timeline-number-node ${isCompleted ? "completed" : ""}`}>
+                            {isCompleted ? "✓" : index + 1}
+                          </div>
+                          {index < roadmap.length - 1 && <div className="timeline-connector-line"></div>}
+                        </div>
+                        <div className={`overview-step-card-detail ${isCompleted ? "completed" : ""}`}>
+                          <div className="overview-card-header">
+                            <h4>{step.title}</h4>
+                            <span className="meta-tag">{getDuration(index)}</span>
+                          </div>
+                          <p>{step.description}</p>
+                          {step.outcome && (
+                            <div className="step-outcome">
+                              <h5>Target Skill / Outcome</h5>
+                              <p>{step.outcome}</p>
+                            </div>
+                          )}
+                          <button
+                            className="start-step-action-btn"
+                            onClick={() => handleStepClick(index)}
+                          >
+                            {isCompleted ? "Review Topic" : "Start Learning"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Stats and Actions */}
+            <div className="roadmap-sidebar">
+              <div className="progress-box">
+                <div className="progress-header-text">
+                  <h3>Overall Progress</h3>
+                  <span className="progress-pct">{progress}%</span>
+                </div>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {isCourseCompleted ? (
+                <div className="completed-text-box">
+                  <h3>🎓 Course Completed!</h3>
+                  <p>You have finished all topics in this roadmap. Unlock your certificate below.</p>
+                  <button
+                    className="cert-download-btn"
+                    onClick={handlePrintCertificate}
+                  >
+                    Download Certificate (PDF)
+                  </button>
+                </div>
+              ) : (
+                <div className="completed-text-box" style={{ borderColor: "#475569", opacity: 0.8 }}>
+                  <h3>🎓 Certificate Locked</h3>
+                  <p>Complete all {roadmap.length} steps in this roadmap to unlock your certificate of completion.</p>
+                  <button
+                    className="cert-download-btn"
+                    style={{ background: "#475569", cursor: "not-allowed" }}
+                    disabled
+                  >
+                    Locked ({completedCount}/{roadmap.length} Done)
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // RENDER LESSON & VIDEO PLAYER VIEW
   return (
     <div className="roadmap-page">
       <div className="roadmap-container">
@@ -231,13 +381,22 @@ function Roadmap() {
         {/* HEADER */}
         <div className="roadmap-header">
           <div className="header-top">
-            <button
-              className="back-btn"
-              onClick={() => navigate(`/course/${id}`)}
-            >
-              ← Back to Course
-            </button>
-            <span className="course-badge">Learning Road</span>
+            <div>
+              <button
+                className="back-btn"
+                onClick={() => setCurrentStepIndex(null)}
+                style={{ marginRight: "10px" }}
+              >
+                ← Back to Roadmap
+              </button>
+              <button
+                className="back-btn"
+                onClick={() => navigate(`/course/${id}`)}
+              >
+                ← Back to Course
+              </button>
+            </div>
+            <span className="course-badge">Learning Lesson</span>
           </div>
 
           <h2>{course.title}</h2>
@@ -256,17 +415,29 @@ function Roadmap() {
             <div className="video-section-wrapper">
               <div className="video-container-box">
                 {videoError ? (
-                  <div className="video-error-fallback">
-                    <h3>Video Playback Error</h3>
-                    <p>This YouTube video cannot be embedded or played directly here due to restrictions.</p>
-                    <a
-                      href={`https://www.youtube.com/watch?v=${currentVideoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="fallback-link-btn"
-                    >
-                      Watch on YouTube
-                    </a>
+                  <div className="video-error-fallback" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                    <iframe
+                      width="100%"
+                      height="80%"
+                      src={`https://www.youtube.com/embed/${currentVideoId}?autoplay=1&rel=0`}
+                      title="YouTube video player fallback"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      style={{ border: "none" }}
+                    ></iframe>
+                    <div style={{ padding: "8px", background: "#1a1010", textAlign: "center", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "12px", color: "#ef4444" }}>If video fails, watch directly:</span>
+                      <a
+                        href={`https://www.youtube.com/watch?v=${currentVideoId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="fallback-link-btn"
+                        style={{ padding: "4px 10px", fontSize: "12px" }}
+                      >
+                        Watch on YouTube
+                      </a>
+                    </div>
                   </div>
                 ) : !videoStarted ? (
                   <div className="start-box">
@@ -294,11 +465,43 @@ function Roadmap() {
 
             {currentStep && (
               <div className="active-step-details">
-                <div className="step-meta-info">
-                  <span className="meta-tag">Topic {currentStepIndex + 1} of {roadmap.length}</span>
-                  <span className="meta-tag">Estimated Duration: {getDuration(currentStepIndex)}</span>
+                <div className="step-meta-info" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <span className="meta-tag">Topic {currentStepIndex + 1} of {roadmap.length}</span>
+                    <span className="meta-tag">Estimated Duration: {getDuration(currentStepIndex)}</span>
+                  </div>
+                  <div>
+                    {watchedSteps.includes(currentStep.id) ? (
+                      <span className="meta-tag" style={{ background: "#065f46", color: "#34d399", fontWeight: "bold" }}>✓ Completed</span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!watchedSteps.includes(currentStep.id)) {
+                            const newWatched = [...watchedSteps, currentStep.id];
+                            setWatchedSteps(newWatched);
+                            updateProgress(newWatched, currentStepIndex);
+                          }
+                        }}
+                        style={{
+                          background: "#3b82f6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          padding: "6px 12px",
+                          fontSize: "0.85rem",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          transition: "background 0.2s"
+                        }}
+                        onMouseOver={(e) => e.target.style.background = "#2563eb"}
+                        onMouseOut={(e) => e.target.style.background = "#3b82f6"}
+                      >
+                        Mark as Completed
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <h3>{currentStep.title}</h3>
+                <h3 style={{ marginTop: "15px" }}>{currentStep.title}</h3>
                 <p>{currentStep.description}</p>
                 {currentStep.outcome && (
                   <div className="step-outcome">
@@ -328,7 +531,7 @@ function Roadmap() {
             </div>
 
             {/* Certificate Generation block */}
-            {isCourseCompleted && (
+            {isCourseCompleted ? (
               <div className="completed-text-box">
                 <h3>🎓 Course Completed!</h3>
                 <p>You have finished all topics in this roadmap. Unlock your certificate below.</p>
@@ -337,6 +540,18 @@ function Roadmap() {
                   onClick={handlePrintCertificate}
                 >
                   Download Certificate (PDF)
+                </button>
+              </div>
+            ) : (
+              <div className="completed-text-box" style={{ borderColor: "#475569", opacity: 0.8 }}>
+                <h3>🎓 Certificate Locked</h3>
+                <p>Complete all {roadmap.length} steps in this roadmap to unlock your certificate of completion.</p>
+                <button
+                  className="cert-download-btn"
+                  style={{ background: "#475569", cursor: "not-allowed" }}
+                  disabled
+                >
+                  Locked ({completedCount}/{roadmap.length} Done)
                 </button>
               </div>
             )}
