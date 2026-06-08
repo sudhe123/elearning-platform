@@ -28,24 +28,24 @@ function Enrollment() {
     }
   }, [navigate]);
 
-  if (!course) {
-    return <div>Loading course...</div>;
-  }
+  if (!course) return <div>Loading course...</div>;
 
-  const handleEnroll = () => {
+  const handleEnroll = async () => {
     if (!learningGoal) {
       alert("Please select a learning goal");
       return;
     }
 
+    const email = localStorage.getItem("email");
+
     let enrolled =
-      JSON.parse(localStorage.getItem("enrolledCourses")) || [];
+      JSON.parse(localStorage.getItem(`enrolledCourses_${email}`)) || [];
 
-    const index = enrolled.findIndex(
-      (c) => c.id === course.id
+    // 🔥 FIX: WAIT FOR ROADMAP
+    const roadmap = await generatePersonalizedRoadmap(
+      course.id,
+      learningGoal
     );
-
-    const roadmap = generatePersonalizedRoadmap(course.id, learningGoal);
 
     const newCourseData = {
       ...course,
@@ -57,6 +57,8 @@ function Enrollment() {
       enrolledAt: new Date().toISOString(),
     };
 
+    const index = enrolled.findIndex((c) => c.id === course.id);
+
     if (index === -1) {
       enrolled.push(newCourseData);
     } else {
@@ -64,7 +66,7 @@ function Enrollment() {
     }
 
     localStorage.setItem(
-      "enrolledCourses",
+      `enrolledCourses_${email}`,
       JSON.stringify(enrolled)
     );
 
@@ -77,8 +79,7 @@ function Enrollment() {
         <h2>Enroll in {course.title}</h2>
 
         <p className="enroll-subtitle">
-          Choose your learning goal before starting
-          this course
+          Choose your learning goal before starting this course
         </p>
 
         <div className="goal-container">
@@ -95,10 +96,7 @@ function Enrollment() {
           ))}
         </div>
 
-        <button
-          className="enroll-confirm"
-          onClick={handleEnroll}
-        >
+        <button className="enroll-confirm" onClick={handleEnroll}>
           Confirm Enrollment
         </button>
       </div>

@@ -5,15 +5,6 @@ import YouTube from "react-youtube";
 import courses from "../Data/CourseData";
 import { generatePersonalizedRoadmap } from "../utils/roadmapGenerator";
 import "./Roadmap.css";
-const getVideoId = (step, course) => {
-  return (
-    step?.videoId ||
-    step?.video ||
-    step?.videoUrl ||
-    course?.video ||
-    "dQw4w9WgXcQ"
-  );
-};
 
 // Safe import resolver wrapper for YouTube component in Vite/React 19 ESM environments
 const YouTubeComponent = typeof YouTube === "function" ? YouTube : (YouTube.default || YouTube);
@@ -30,35 +21,43 @@ function Roadmap() {
   const [videoStarted, setVideoStarted] = useState(false);
   const [learningGoal, setLearningGoal] = useState("");
   const [videoError, setVideoError] = useState(false);
-
-  useEffect(() => {
+useEffect(() => {
+  const loadRoadmap = async () => {
     const enrolledCourses =
       JSON.parse(localStorage.getItem("enrolledCourses")) || [];
 
     const saved = enrolledCourses.find((c) => c.id == id);
 
-    if (saved) {
-      setLearningGoal(saved.learningGoal || "");
-      setWatchedSteps(saved.watchedSteps || []);
-      
-      // Load or generate roadmap
-      let savedRoadmap = saved.roadmap;
-      if (!savedRoadmap || savedRoadmap.length === 0) {
-        savedRoadmap = generatePersonalizedRoadmap(Number(id), saved.learningGoal || "Skill Improvement");
-        saved.roadmap = savedRoadmap;
-        
-        // Save back to local storage
-        const updatedEnrolled = enrolledCourses.map((c) => {
-          if (c.id == id) {
-            return { ...c, roadmap: savedRoadmap };
-          }
-          return c;
-        });
-        localStorage.setItem("enrolledCourses", JSON.stringify(updatedEnrolled));
-      }
-      setRoadmap(savedRoadmap);
+    if (!saved) return;
+
+    setLearningGoal(saved.learningGoal || "");
+    setWatchedSteps(saved.watchedSteps || []);
+
+    let savedRoadmap = saved.roadmap;
+
+    // 🔥 FIX: invalid roadmap safety check
+    if (!Array.isArray(savedRoadmap) || savedRoadmap.length === 0) {
+      savedRoadmap = await generatePersonalizedRoadmap(
+        Number(id),
+        saved.learningGoal || "Skill Improvement"
+      );
+
+      const updatedEnrolled = enrolledCourses.map((c) =>
+        c.id == id ? { ...c, roadmap: savedRoadmap } : c
+      );
+
+      localStorage.setItem(
+        "enrolledCourses",
+        JSON.stringify(updatedEnrolled)
+      );
     }
-  }, [id]);
+
+    // 🔥 FINAL SAFETY
+    setRoadmap(Array.isArray(savedRoadmap) ? savedRoadmap : []);
+  };
+
+  loadRoadmap();
+}, [id]);
 
   // When step changes, reset error state and load its configuration
   useEffect(() => {
@@ -86,10 +85,14 @@ function Roadmap() {
   }
 
   // Calculate progress based on how many steps of the CURRENT roadmap are completed
-  const completedCount = roadmap.filter((step) => watchedSteps.includes(step.id)).length;
+  const safeRoadmap = Array.isArray(roadmap) ? roadmap : [];
+
+const completedCount = safeRoadmap.filter((step) =>
+  watchedSteps.includes(step.id)
+).length;
   const progress =
-    roadmap.length > 0
-      ? Math.round((completedCount / roadmap.length) * 100)
+    safeRoadmap.length > 0
+      ? Math.round((completedCount / safeRoadmap.length) * 100)
       : 0;
 
   const isCourseCompleted = roadmap.length > 0 && completedCount === roadmap.length;
@@ -117,9 +120,11 @@ function Roadmap() {
 
   const currentStep = currentStepIndex !== null ? (roadmap?.[currentStepIndex] || null) : null;
 
-const currentVideoId = currentStep
-  ? getVideoId(currentStep, course)
-  : course?.video || "dQw4w9WgXcQ";
+  const currentVideoId =
+    currentStep?.video ||
+    currentStep?.videoUrl ||
+    course?.video ||
+    "dQw4w9WgXcQ"; // Definite fallback
 
   const onPlayerStateChange = (event) => {
     // 0 is PlayerState.ENDED
